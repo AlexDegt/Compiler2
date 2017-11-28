@@ -1,4 +1,4 @@
-/*
+*
  *  The scanner definition for COOL.
  */
 
@@ -207,6 +207,19 @@ QUOTES          \"
   string_buf_ptr = string_buf;
   string_buf_left = MAX_STR_CONST;
   string_error = false;
+}
+
+<STRING><<EOF>> {
+  yylval.error_msg = "EOF in string constant";
+  BEGIN(INITIAL);
+  return ERROR;
+}
+
+<STRING>{NOTSTRING}* {
+  int rc = str_write(yytext, strlen(yytext));
+  if (rc != 0) {
+    return (ERROR);
+  }
 }
 
 {WHITESPACE}                     ;
