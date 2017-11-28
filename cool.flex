@@ -126,7 +126,7 @@ NEWLINE         [\n]
 NOTNEWLINE      [^\n]
 NOTCOMMENT      [^\n*(\\]
 NOTSTRING       [^\n\0\\\"]
-WHITESPACE      [ \t\r\f\v]+
+WHITESPACE      [ \r\f\v\t]+
 LE              <=
 ASSIGN          <-
 NULLCH          [\0]
@@ -264,15 +264,23 @@ QUOTES          \"
   }
 }
 
+<STRING>{QUOTES} {
+  BEGIN(INITIAL);
+  if (!string_error) {
+    yylval.symbol = stringtable.add_string(string_buf, string_buf_ptr - string_buf);
+    return (STR_CONST);
+  }
+}
 
 
-{WHITESPACE}                     ;
 
-<INITIAL>{TRUE}                  { yylval.boolean = true; return (BOOL_CONST); }
-<INITIAL>{FALSE}                 { yylval.boolean = false; return (BOOL_CONST); }
+<INITIAL>{WHITESPACE} 		;
 
-<INITIAL>{CLASS}                 { return (CLASS); }
-<INITIAL>{ELSE}                  { return (ELSE); }
+{TRUE}                 		 { yylval.boolean = true; return (BOOL_CONST); }
+{FALSE}                 	 { yylval.boolean = false; return (BOOL_CONST); }
+
+{CLASS}               		 { return (CLASS); }
+{ELSE}                  	 { return (ELSE); }
 <INITIAL>{FI}                    { return (FI); }
 <INITIAL>{IF}                    { return (IF); }
 <INITIAL>{IN}                    { return (IN); }
@@ -288,7 +296,7 @@ QUOTES          \"
 <INITIAL>{NEW}                   { return (NEW); }
 <INITIAL>{OF}                    { return (OF); }
 <INITIAL>{NOT}                   { return (NOT); }
-<INITIAL>{DARROW}		         { return (DARROW); }
+<INITIAL>{DARROW}		 { return (DARROW); }
 <INITIAL>{ASSIGN}                { return (ASSIGN); }
 <INITIAL>{LE}                    { return (LE); }
 
