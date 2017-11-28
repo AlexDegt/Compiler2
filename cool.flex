@@ -7,9 +7,6 @@
  *  output, so headers and global definitions are placed here to be visible
  * to the code in the file.  Don't remove anything that was here initially
  */
-
-/**/
-
 %{
 #include <cool-parse.h>
 #include <stringtab.h>
@@ -98,7 +95,6 @@ char * backslash_common() {
  */
 
 
-
 /*
  * Define names for regular expressions here.
  */
@@ -130,7 +126,7 @@ NEWLINE         [\n]
 NOTNEWLINE      [^\n]
 NOTCOMMENT      [^\n*(\\]
 NOTSTRING       [^\n\0\\\"]
-WHITESPACE      [ \tr\f\v]+
+WHITESPACE      [ \t\r\f\v]+
 LE              <=
 ASSIGN          <-
 NULLCH          [\0]
@@ -159,6 +155,12 @@ QUOTES          \"
  /*
   *  The multiple-character operators.
   */
+
+
+
+
+
+
 
 <INITIAL,COMMENT>{NEWLINE} {
     curr_lineno++;
@@ -221,7 +223,6 @@ QUOTES          \"
     return (ERROR);
   }
 }
-
 <STRING>{NULLCH} {
   null_character_err();
   return (ERROR);
@@ -233,6 +234,37 @@ QUOTES          \"
   if (!string_error) {
     yylval.error_msg = "Unterminated string constant";
     return (ERROR);
+  }
+}
+<STRING>{BACKSLASH}(.|{NEWLINE}) {
+  char *c = backslash_common();
+  int rc;
+
+  switch (*c) {
+    case 'n':
+      rc = str_write("\n", 1);
+      break;
+    case 'b':
+      rc = str_write("\b", 1);
+      break;
+    case 't':
+      rc = str_write("\t", 1);
+      break;
+    case 'f':
+      rc = str_write("\f", 1);
+      break;
+    case '\0':
+      rc = null_character_err();
+      break;
+    default:
+      rc = str_write(c, 1);
+  }
+  if (rc != 0) {
+    return (ERROR);
+  }
+}
+
+
 
 {WHITESPACE}                     ;
 
@@ -260,7 +292,36 @@ QUOTES          \"
 <INITIAL>{ASSIGN}                { return (ASSIGN); }
 <INITIAL>{LE}                    { return (LE); }
 
+<INITIAL>{TYPEID}                { yylval.symbol = stringtable.add_string(yytext); return (TYPEID); }
+<INITIAL>{OBJECTID}              { yylval.symbol = stringtable.add_string(yytext); return (OBJECTID); }
+<INITIAL>{DIGIT}+                { yylval.symbol = stringtable.add_string(yytext); return (INT_CONST); }
+
+<INITIAL>";"                     { return int(';'); }
+<INITIAL>","                     { return int(','); }
+<INITIAL>":"                     { return int(':'); }
+<INITIAL>"{"                     { return int('{'); }
+<INITIAL>"}"                     { return int('}'); }
+<INITIAL>"+"                     { return int('+'); }
+<INITIAL>"-"                     { return int('-'); }
+<INITIAL>"*"                     { return int('*'); }
+<INITIAL>"/"                     { return int('/'); }
+<INITIAL>"<"                     { return int('<'); }
+<INITIAL>"="                     { return int('='); }
+<INITIAL>"~"                     { return int('~'); }
+<INITIAL>"."                     { return int('.'); }
+<INITIAL>"@"                     { return int('@'); }
+<INITIAL>"("                     { return int('('); }
+<INITIAL>")"                     { return int(')'); }
+
 <INITIAL>.                       { yylval.error_msg = yytext; return (ERROR); }
+
+
+
+
+
+
+
+
 
  /*
   * Keywords are case-insensitive except for the values true and false,
@@ -270,7 +331,7 @@ QUOTES          \"
 
  /*
   *  String constants (C syntax)
-  *  Escape sequence \c is accepted for all characters c. Except for 
+  *  Escape sequence \c is accepted for all characters c. Except for
   *  \n \t \b \f, the result is c.
   *
   */
