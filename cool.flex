@@ -160,11 +160,82 @@ QUOTES          \"
   *  The multiple-character operators.
   */
 
+<INITIAL,COMMENT>{NEWLINE} {
+    curr_lineno++;
+}
 
+{START_COMMENT} {
+  comment++;
+  BEGIN(COMMENT);
+}
 
+<COMMENT><<EOF>> {
+  yylval.error_msg = "EOF in comment";
+  BEGIN(INITIAL);
+  return (ERROR);
+}
 
+<COMMENT>{STAR}/{NOTRIGHTPAREN}    ;
+<COMMENT>{LEFTPAREN}/{NOTSTAR}     ;
+<COMMENT>{NOTCOMMENT}*             ;
 
+<COMMENT>{BACKSLASH}(.|{NEWLINE}) {
+  backslash_common();
+};
+<COMMENT>{BACKSLASH}               ;
 
+<COMMENT>{START_COMMENT} {
+  comment++;
+}
+
+<COMMENT>{END_COMMENT} {
+  comment--;
+  if (comment == 0) {
+    BEGIN(INITIAL);
+  }
+}
+
+<INITIAL>{END_COMMENT} {
+  yylval.error_msg = "Unmatched *)";
+  return (ERROR);
+}
+
+<INITIAL>{LINE_COMMENT}{NOTNEWLINE}*  ;
+
+<INITIAL>{QUOTES} {
+  BEGIN(STRING);
+  string_buf_ptr = string_buf;
+  string_buf_left = MAX_STR_CONST;
+  string_error = false;
+}
+
+{WHITESPACE}                     ;
+
+<INITIAL>{TRUE}                  { yylval.boolean = true; return (BOOL_CONST); }
+<INITIAL>{FALSE}                 { yylval.boolean = false; return (BOOL_CONST); }
+
+<INITIAL>{CLASS}                 { return (CLASS); }
+<INITIAL>{ELSE}                  { return (ELSE); }
+<INITIAL>{FI}                    { return (FI); }
+<INITIAL>{IF}                    { return (IF); }
+<INITIAL>{IN}                    { return (IN); }
+<INITIAL>{INHERITS}              { return (INHERITS); }
+<INITIAL>{ISVOID}                { return (ISVOID); }
+<INITIAL>{LET}                   { return (LET); }
+<INITIAL>{LOOP}                  { return (LOOP); }
+<INITIAL>{POOL}                  { return (POOL); }
+<INITIAL>{THEN}                  { return (THEN); }
+<INITIAL>{WHILE}                 { return (WHILE); }
+<INITIAL>{CASE}                  { return (CASE); }
+<INITIAL>{ESAC}                  { return (ESAC); }
+<INITIAL>{NEW}                   { return (NEW); }
+<INITIAL>{OF}                    { return (OF); }
+<INITIAL>{NOT}                   { return (NOT); }
+<INITIAL>{DARROW}		         { return (DARROW); }
+<INITIAL>{ASSIGN}                { return (ASSIGN); }
+<INITIAL>{LE}                    { return (LE); }
+
+<INITIAL>.                       { yylval.error_msg = yytext; return (ERROR); }
 
  /*
   * Keywords are case-insensitive except for the values true and false,
