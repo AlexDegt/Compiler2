@@ -1,4 +1,4 @@
-*
+/*
  *  The scanner definition for COOL.
  */
 
@@ -7,6 +7,9 @@
  *  output, so headers and global definitions are placed here to be visible
  * to the code in the file.  Don't remove anything that was here initially
  */
+
+/**/
+
 %{
 #include <cool-parse.h>
 #include <stringtab.h>
@@ -39,99 +42,112 @@ extern int verbose_flag;
 
 extern YYSTYPE cool_yylval;
 
+
+
+
+
+
+
+
+unsigned int comment = 0;
+unsigned int string_buf_left;
+bool string_error;
+
+int str_write(char *str, unsigned int len) {
+  if (len < string_buf_left) {
+    strncpy(string_buf_ptr, str, len);
+    string_buf_ptr += len;
+    string_buf_left -= len;
+    return 0;
+  } else {
+    string_error = true;
+    yylval.error_msg = "String constant too long";
+    return -1;
+  }
+}
+
+int null_character_err() {
+  yylval.error_msg = "String contains null character";
+  string_error = true;
+  return -1;
+}
+
+char * backslash_common() {
+  char *c = &yytext[1];
+  if (*c == '\n') {
+    curr_lineno++;
+  }
+  return c;
+}
+
 /*
  *  Add Your own definitions here
  */
 
 %}
 
+
+
+
+
+
+
+
+/*
+ *  Add Your own definitions here
+ */
+
+
+
 /*
  * Define names for regular expressions here.
  */
 
 CLASS           [cC][lL][aA][sS][sS]
-
 DARROW          =>
-
 DIGIT           [0-9]
-
 ELSE            [eE][lL][sS][eE]
-
 FALSE           f[aA][lL][sS][eE]
-
 FI              [fF][iI]
-
 IF              [iI][fF]
-
 IN              [iI][nN]
-
 INHERITS        [iI][nN][hH][eE][rR][iI][tT][sS]
-
 ISVOID          [iI][sS][vV][oO][iI][dD]
-
 LET             [lL][eE][tT]
-
 LOOP            [lL][oO][oO][pP]
-
 POOL            [pP][oO][oO][lL]
-
 THEN            [tT][hH][eE][nN]
-
 WHILE           [wW][hH][iI][lL][eE]
-
 CASE            [cC][aA][sS][eE]
-
 ESAC            [eE][sS][aA][cC]
-
 NEW             [nN][eE][wW]
-
 OF              [oO][fF]
-
 NOT             [nN][oO][tT]
-
 TRUE            t[rR][uU][eE]
-
 OBJECTID        [a-z][_a-zA-Z0-9]*
-
 TYPEID          [A-Z][_a-zA-Z0-9]*
-
 NEWLINE         [\n]
-
 NOTNEWLINE      [^\n]
-
 NOTCOMMENT      [^\n*(\\]
-
 NOTSTRING       [^\n\0\\\"]
-
-WHITESPACE      [ \t\r\f\v]+
-
+WHITESPACE      [ \tr\f\v]+
 LE              <=
-
 ASSIGN          <-
-
 NULLCH          [\0]
-
 BACKSLASH       [\\]
-
 STAR            [*]
-
 NOTSTAR         [^*]
-
 LEFTPAREN       [(]
-
 NOTLEFTPAREN    [^(]
-
 RIGHTPAREN      [)]
-
 NOTRIGHTPAREN   [^)]
-
-
-
 LINE_COMMENT    "--"
 START_COMMENT   "(*"
 END_COMMENT     "*)"
-
 QUOTES          \"
+
+%x COMMENT
+%x STRING
 
 %%
 
@@ -143,7 +159,12 @@ QUOTES          \"
  /*
   *  The multiple-character operators.
   */
-{DARROW}		{ return (DARROW); }
+
+
+
+
+
+
 
  /*
   * Keywords are case-insensitive except for the values true and false,
@@ -151,7 +172,7 @@ QUOTES          \"
   */
 
 
- /
+ /*
   *  String constants (C syntax)
   *  Escape sequence \c is accepted for all characters c. Except for 
   *  \n \t \b \f, the result is c.
@@ -159,4 +180,3 @@ QUOTES          \"
   */
 
 %%
-
