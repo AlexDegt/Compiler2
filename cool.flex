@@ -1,4 +1,4 @@
-*
+/*
  *  The scanner definition for COOL.
  */
 
@@ -221,6 +221,18 @@ QUOTES          \"
     return (ERROR);
   }
 }
+
+<STRING>{NULLCH} {
+  null_character_err();
+  return (ERROR);
+}
+
+<STRING>{NEWLINE} {
+  BEGIN(INITIAL);
+  curr_lineno++;
+  if (!string_error) {
+    yylval.error_msg = "Unterminated string constant";
+    return (ERROR);
 
 {WHITESPACE}                     ;
 
